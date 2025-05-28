@@ -1,16 +1,20 @@
 "use client"
 import React, { useEffect, useState } from 'react';
-import { Activity, Shield, Users, AlertTriangle, TrendingUp, Clock, Database, Eye } from 'lucide-react';
+import { Activity, Shield, Users, AlertTriangle, TrendingUp, Clock, Database, Eye, Brain } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
+  const [modelStats, setModelStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8082/admin/metrics')
-      .then(res => res.json())
-      .then(data => {
-        setData(data);
+    Promise.all([
+      fetch('http://localhost:8082/admin/metrics').then(res => res.json()),
+      fetch('http://localhost:8082/admin/detection-stats').then(res => res.json())
+    ])
+      .then(([metricsData, detectionData]) => {
+        setData(metricsData);
+        setModelStats(detectionData);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -58,7 +62,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <StatCard
             title="Total IPs"
             value={Object.keys(data.rate_by_ip || {}).length}
@@ -82,6 +86,12 @@ export default function AdminDashboard() {
             value={Object.keys(data.blocked_requests || {}).length}
             icon={<AlertTriangle className="h-5 w-5" />}
             color="red"
+          />
+          <StatCard
+            title="Model Blocked"
+            value={modelStats?.blocked_count || 0}
+            icon={<Brain className="h-5 w-5" />}
+            color="indigo"
           />
         </div>
 
@@ -115,6 +125,20 @@ export default function AdminDashboard() {
             color="red"
             description="Requests that were denied due to rate limiting"
           />
+          <MetricsSection 
+            title="Model Detection" 
+            data={modelStats?.blocked_clients?.reduce((acc, client) => ({ ...acc, [client]: 'Blocked' }), {}) || {}} 
+            icon={<Brain className="h-5 w-5" />}
+            color="indigo"
+            description={`Anomaly detection using ${modelStats?.detection_algorithm || 'unknown'} algorithm`}
+          />
+          <MetricsSection
+            title="Model Training Statistics"
+            data={data.model_training_stats}
+            icon={<Clock className="h-5 w-5" />}
+            color="blue"
+            description="Statistics about the anomaly detection model training"
+          />
         </div>
       </div>
     </div>
@@ -126,7 +150,8 @@ function StatCard({ title, value, icon, color }) {
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
     green: 'bg-green-50 text-green-600 border-green-200',
     purple: 'bg-purple-50 text-purple-600 border-purple-200',
-    red: 'bg-red-50 text-red-600 border-red-200'
+    red: 'bg-red-50 text-red-600 border-red-200',
+    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-200'
   };
 
   return (
@@ -151,7 +176,8 @@ function MetricsSection({ title, data, icon, color, description }) {
     blue: 'from-blue-500 to-blue-600',
     green: 'from-green-500 to-green-600',
     purple: 'from-purple-500 to-purple-600',
-    red: 'from-red-500 to-red-600'
+    red: 'from-red-500 to-red-600',
+    indigo: 'from-indigo-500 to-indigo-600'
   };
 
   const entries = Object.entries(data || {});
