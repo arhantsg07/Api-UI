@@ -115,6 +115,7 @@ The dashboard connects to the following endpoints:
 
 ### Project Structure
 
+<pre>
 .
 ├── README.md
 |---.next                   # Next.js build output
@@ -136,7 +137,7 @@ The dashboard connects to the following endpoints:
     ├── next.svg
     ├── vercel.svg
     └── window.svg
-
+</pre>
 
 ## Acknowledgments
 
